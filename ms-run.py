@@ -1,8 +1,13 @@
 import argparse
 import logging
 import subprocess
+from functools import partial
+from operator import is_not
 
 import configparser
+
+import executor
+from executorsImpl import GradleCommandExecutorImpl
 
 FORMAT = '%(asctime)-15s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -13,52 +18,57 @@ config.sections()
 config.read('source.ini')
 
 
-def run(command, dir, preCommand='gradle'):
-    subprocess.Popen('start cmd /C  ' + preCommand + ' ' + command, shell=True, cwd=dir)
-
-
 def getExcludedItem():
     return config.get('excluded', 'all').split(',')
 
 
+def possibleValues():
+    return ['cv', ]
+
+
+def executeCmd(command, appName, executor):
+    dir = get_values_by_key_from_group('sources', appName)
+    executor.execute(dir, command)
+
+
+# TODO do refaktoru
+def execute(args, executor):
+    if (args.all is True):
+        for key, value in vars(args).iteritems():
+            if value is not None:
+                if key is not 'main_command' and key is not 'all':
+                    if key not in getExcludedItem():
+                        executeCmd(value, key, executor)
+    else:
+        for key, value in vars(args).iteritems():
+            if value is not None:
+                if key is not 'main_command' and key is not 'all':
+                    executeCmd(value, key, executor)
+
+
+def get_values_by_key_from_group(group, key):
+    return config[group][key]
+
+
 def parse_arg(args):
-    if args.st:
-        dir = config['sources']['trial']
-        command = args.st
-        run(command, dir)
-    if args.sn:
-        dir = config['sources']['not']
-        command = args.sn
-        run(command, dir)
-    if args.sauth:
-        dir = config['sources']['auth']
-        command = args.sauth
-        run(command, dir)
-    if args.saud:
-        dir = config['sources']['auditing']
-        command = args.saud
-        run(command, dir)
-    if args.all:
-        v = dict(config.items('sources'))
-        excluded = getExcludedItem()
-        command = args.all
-        for key, value in v.iteritems():
-            if key not in excluded:
-                dir = config['sources'][key]
-                run(command, dir)
-    if args.rd:
-        dir = config['other']['redis']
-        command = 'redis-server.exe'
-        run(command, dir, '')
+    execute(args, GradleCommandExecutorImpl())
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(add_help=False)
+def main():
+    parser = argparse.ArgumentParser(add_help=True)
+
+    parser.add_argument("--sb", nargs='?')
+    parser.add_argument("--s", nargs='?')
     parser.add_argument("--st", nargs='?')
     parser.add_argument("--sn", nargs='?')
     parser.add_argument("--sauth", nargs='?')
     parser.add_argument("--saud", nargs='?')
-    parser.add_argument("--rd", action='store_true')
-    parser.add_argument("--all", nargs='?')
+    parser.add_argument("--cv", nargs='?')
+    parser.add_argument("--all", action='store_true')
+
     args = parser.parse_args()
     parse_arg(args)
+
+
+if __name__ == "__main__":
+    main()
