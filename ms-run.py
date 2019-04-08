@@ -22,10 +22,6 @@ def getExcludedItem():
     return config.get('excluded', 'all').split(',')
 
 
-def possibleValues():
-    return ['cv', ]
-
-
 def executeCmd(command, appName, executor):
     dir = get_values_by_key_from_group('sources', appName)
     executor.execute(dir, command)
