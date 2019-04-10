@@ -1,8 +1,8 @@
 import configparser
-
+import os
 config = configparser.ConfigParser()
 config.sections()
-config.read('source.ini')
+config.read(os.path.dirname(__file__) + '/../source.ini')
 
 
 class ConfigurationResolver:
